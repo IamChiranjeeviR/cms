@@ -15,6 +15,12 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 const Pannel = () => {
   const [isCollapsed, setIsCollapsed] = useState(false); // State to manage sidenav collapse
+  const [searchTerm, setSearchTerm] = useState(""); // Add searchTerm state
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value); // Update search term on input change
+  };
+
   const jwtToken = localStorage.getItem("jwtToken");
 
   const handleLogout = () => {
@@ -121,13 +127,16 @@ const Pannel = () => {
               </SheetContent>
             </Sheet>
             <div className="w-full flex-1">
-              <form>
+              <form onSubmit={(e) => e.preventDefault()}>
+                {/* Prevent form submission */}
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="search"
                     placeholder="Search Applications..."
                     className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
+                    value={searchTerm} // Controlled input
+                    onChange={handleSearchChange} // Handle input change
                   />
                 </div>
               </form>
@@ -165,7 +174,8 @@ const Pannel = () => {
 
           {/* Scrollable content */}
           <div className="overflow-y-auto h-full p-4">
-            <Outlet />
+            <Outlet context={{ searchTerm }} />
+            {/* Pass searchTerm as context */}
           </div>
         </div>
       </div>
@@ -174,4 +184,3 @@ const Pannel = () => {
 };
 
 export default Pannel;
-

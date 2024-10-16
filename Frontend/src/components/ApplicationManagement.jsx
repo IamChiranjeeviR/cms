@@ -31,9 +31,13 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import axios from "axios";
 import ViewApplication from "./ViewApplication";
+import { useOutletContext } from "react-router-dom";
 
 const ApplicationManagement = () => {
   const [applications, setApplications] = useState([]);
+  const [sortOrder, setSortOrder] = useState("asc");
+  const [currentTab, setCurrentTab] = useState("all");
+  const { searchTerm } = useOutletContext();
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -104,6 +108,40 @@ const ApplicationManagement = () => {
       console.error("Error in Updating Application", error);
     }
   };
+
+  // Function to sort applications by name
+  const sortApplications = (order) => {
+    const sortedApps = [...applications].sort((a, b) => {
+      const aName = a.name.toLowerCase();
+      const bName = b.name.toLowerCase();
+      return order === "asc"
+        ? aName.localeCompare(bName)
+        : bName.localeCompare(aName);
+    });
+    setApplications(sortedApps);
+  };
+
+  // Handle sorting from dropdown menu
+  const handleSortChange = (order) => {
+    setSortOrder(order);
+    sortApplications(order);
+  };
+
+  // Filter applications based on the current tab and search term
+  const filteredApplications = applications.filter((application) => {
+    const lowercasedSearchTerm = searchTerm.toLowerCase();
+    const matchesSearchTerm =
+      application.applicationId.toString().includes(lowercasedSearchTerm) ||
+      application.name.toLowerCase().includes(lowercasedSearchTerm) ||
+      application.username.toLowerCase().includes(lowercasedSearchTerm);
+
+    // Filter by current tab
+    const matchesTab =
+      currentTab === "all" || application.status.toLowerCase() === currentTab;
+
+    return matchesSearchTerm && matchesTab; // Both conditions must be true
+  });
+
   return (
     <>
       <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -114,7 +152,7 @@ const ApplicationManagement = () => {
                 <TabsList>
                   <TabsTrigger value="all">All</TabsTrigger>
                   <TabsTrigger value="pending">Pending</TabsTrigger>
-                  <TabsTrigger value="accepted">Accepted</TabsTrigger>
+                  <TabsTrigger value="approved">Approved</TabsTrigger>
                   <TabsTrigger value="rejected" className="hidden sm:flex">
                     Rejected
                   </TabsTrigger>
@@ -132,18 +170,19 @@ const ApplicationManagement = () => {
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Filter by</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuCheckboxItem>A-z</DropdownMenuCheckboxItem>
-                      <DropdownMenuCheckboxItem>z-A</DropdownMenuCheckboxItem>
-                      <DropdownMenuCheckboxItem>
-                        Newest First
-                      </DropdownMenuCheckboxItem>
-                      <DropdownMenuCheckboxItem>
-                        Oldest First
-                      </DropdownMenuCheckboxItem>
+                      <DropdownMenuItem onClick={() => handleSortChange("asc")}>
+                        Sort by Name (A-Z)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleSortChange("desc")}
+                      >
+                        Sort by Name (Z-A)
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
               </div>
+
               <TabsContent value="all">
                 <Card x-chunk="dashboard-06-chunk-0">
                   <CardHeader>
@@ -177,7 +216,7 @@ const ApplicationManagement = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {applications.map((application, index) => (
+                        {filteredApplications.map((application, index) => (
                           <TableRow key={application.applicationId}>
                             <TableCell className="sm:table-cell text-center font-bold">
                               {application.applicationId}
@@ -263,12 +302,267 @@ const ApplicationManagement = () => {
                       </TableBody>
                     </Table>
                   </CardContent>
-                  <CardFooter>
-                    <div className="text-xs text-muted-foreground">
-                      Showing <strong>1-10</strong> of{" "}
-                      <strong>{applications.length}</strong> applications
-                    </div>
-                  </CardFooter>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="pending">
+                <Card x-chunk="dashboard-06-chunk-0">
+                  <CardHeader>
+                    <CardTitle>Applications</CardTitle>
+                    <CardDescription>
+                      Manage your products and view their sales performance.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[100px] sm:table-cell text-center">
+                            <span>Application ID</span>
+                          </TableHead>
+                          <TableHead className="hidden md:table-cell text-center">
+                            Name
+                          </TableHead>
+                          <TableHead className="hidden md:table-cell text-center">
+                            Username
+                          </TableHead>
+                          <TableHead className="text-center">Status</TableHead>
+                          <TableHead className="hidden md:table-cell text-center">
+                            Group
+                          </TableHead>
+                          <TableHead className="hidden md:table-cell text-center">
+                            View
+                          </TableHead>
+                          <TableHead className="text-center">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredApplications
+                          .filter(
+                            (application) => application.status === "PENDING"
+                          ) // Filter for "PENDING" status
+                          .map((application, index) => (
+                            <TableRow key={application.applicationId}>
+                              <TableCell className="sm:table-cell text-center font-bold">
+                                {application.applicationId}
+                              </TableCell>
+                              <TableCell className="hidden sm:table-cell font-medium text-center">
+                                {application.name}
+                              </TableCell>
+                              <TableCell className="hidden sm:table-cell font-medium text-center">
+                                {application.username}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Badge
+                                  variant="outline"
+                                  className={`text-sm text-black border-orange-500`}
+                                >
+                                  {application.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="hidden md:table-cell text-center">
+                                {application.degreeCourse
+                                  ? application.degreeCourse
+                                  : "BCA"}
+                              </TableCell>
+                              <TableCell className="table-cell">
+                                <div className="flex justify-center">
+                                  <ViewApplication application={application} />
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-row gap-1 justify-center">
+                                  <Button
+                                    className="bg-green-700"
+                                    onClick={() =>
+                                      handleStatus(
+                                        application.applicationId,
+                                        "APPROVED"
+                                      )
+                                    }
+                                  >
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    className="bg-red-600"
+                                    onClick={() =>
+                                      handleStatus(
+                                        application.applicationId,
+                                        "REJECTED"
+                                      )
+                                    }
+                                  >
+                                    Reject
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="approved">
+                <Card x-chunk="dashboard-06-chunk-0">
+                  <CardHeader>
+                    <CardTitle>Applications</CardTitle>
+                    <CardDescription>
+                      Manage your products and view their sales performance.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[100px] sm:table-cell text-center">
+                            <span>Application ID</span>
+                          </TableHead>
+                          <TableHead className="hidden md:table-cell text-center">
+                            Name
+                          </TableHead>
+                          <TableHead className="hidden md:table-cell text-center">
+                            Username
+                          </TableHead>
+                          <TableHead className="text-center">Status</TableHead>
+                          <TableHead className="hidden md:table-cell text-center">
+                            Group
+                          </TableHead>
+                          <TableHead className="hidden md:table-cell text-center">
+                            View
+                          </TableHead>
+                          <TableHead className="text-center">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredApplications
+                          .filter(
+                            (application) => application.status === "APPROVED"
+                          ) // Filter for "APPROVED" status
+                          .map((application, index) => (
+                            <TableRow key={application.applicationId}>
+                              <TableCell className="sm:table-cell text-center font-bold">
+                                {application.applicationId}
+                              </TableCell>
+                              <TableCell className="hidden sm:table-cell font-medium text-center">
+                                {application.name}
+                              </TableCell>
+                              <TableCell className="hidden sm:table-cell font-medium text-center">
+                                {application.username}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Badge
+                                  variant="outline"
+                                  className={`text-sm text-black border-green-500`}
+                                >
+                                  {application.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="hidden md:table-cell text-center">
+                                {application.degreeCourse
+                                  ? application.degreeCourse
+                                  : "BCA"}
+                              </TableCell>
+                              <TableCell className="table-cell">
+                                <div className="flex justify-center">
+                                  <ViewApplication application={application} />
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-row gap-3 justify-center">
+                                  <span className="text-green-600 font-semibold text-xl">
+                                    Approved
+                                  </span>
+                                  <CircleCheckBig className="text-green-600" />
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="rejected">
+                <Card x-chunk="dashboard-06-chunk-0">
+                  <CardHeader>
+                    <CardTitle>Applications</CardTitle>
+                    <CardDescription>
+                      Manage your products and view their sales performance.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[100px] sm:table-cell text-center">
+                            <span>Application ID</span>
+                          </TableHead>
+                          <TableHead className="hidden md:table-cell text-center">
+                            Name
+                          </TableHead>
+                          <TableHead className="hidden md:table-cell text-center">
+                            Username
+                          </TableHead>
+                          <TableHead className="text-center">Status</TableHead>
+                          <TableHead className="hidden md:table-cell text-center">
+                            Group
+                          </TableHead>
+                          <TableHead className="hidden md:table-cell text-center">
+                            View
+                          </TableHead>
+                          <TableHead className="text-center">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredApplications
+                          .filter(
+                            (application) => application.status === "REJECTED"
+                          ) // Filter for "REJECTED" status
+                          .map((application, index) => (
+                            <TableRow key={application.applicationId}>
+                              <TableCell className="sm:table-cell text-center font-bold">
+                                {application.applicationId}
+                              </TableCell>
+                              <TableCell className="hidden sm:table-cell font-medium text-center">
+                                {application.name}
+                              </TableCell>
+                              <TableCell className="hidden sm:table-cell font-medium text-center">
+                                {application.username}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Badge
+                                  variant="outline"
+                                  className={`text-sm text-black border-red-500`}
+                                >
+                                  {application.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="hidden md:table-cell text-center">
+                                {application.degreeCourse
+                                  ? application.degreeCourse
+                                  : "BCA"}
+                              </TableCell>
+                              <TableCell className="table-cell">
+                                <div className="flex justify-center">
+                                  <ViewApplication application={application} />
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-row gap-3 justify-center">
+                                  <span className="text-red-600 font-semibold text-xl">
+                                    Rejected
+                                  </span>
+                                  <CircleX className="text-red-600" />
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
                 </Card>
               </TabsContent>
             </Tabs>
