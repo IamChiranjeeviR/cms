@@ -27,6 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import emailjs from "emailjs-com"; // Import EmailJS
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import axios from "axios";
@@ -87,7 +88,6 @@ const ApplicationManagement = () => {
           Authorization: `Bearer ${jwtToken}`,
           "Content-Type": "application/json",
         },
-
       };
       const response = await axios.post(
         `http://localhost:8080/api/v1/applications/${applicationID}/status`,
@@ -104,10 +104,64 @@ const ApplicationManagement = () => {
               : app
           )
         );
+        console.log(response.data);
+        const { studentId, defaultPassword } = response.data; // Ensure you are accessing the correct keys
+
+        // Assume you have access to the application details (applicantEmail, studentName)
+        const application = applications.find(
+          (app) => app.applicationId === applicationID
+        );
+
+        if (application) {
+          // Send email ONLY if the application status is APPROVED
+          if (status === "APPROVED") {
+            sendEmail(
+              application.email, // Applicant's email
+              applicationID, // Application ID
+              application.name, // Student's name
+              studentId, // Correctly access studentId
+              defaultPassword // Correctly access defaultPassword
+            );
+          } else {
+            console.log("Application is not approved, no email sent.");
+          }
+        }
       }
     } catch (error) {
       console.error("Error in Updating Application", error);
     }
+  };
+
+  const sendEmail = (
+    applicantEmail,
+    applicationId,
+    studentName,
+    student_id,
+    defaultPassword
+  ) => {
+    const templateParams = {
+      to_name: studentName, // The student's name
+      application_id: applicationId, // The application ID from your API response
+      to_email: applicantEmail, // The applicant's email
+      student_id: student_id,
+      password: defaultPassword,
+    };
+    console.log(templateParams);
+    emailjs
+      .send(
+        "service_mqciqq6", // Your Service ID
+        "template_hrqahmg", // Your Template ID
+        templateParams,
+        "guq9xP1AcHyGRVtCi" // Your User ID
+      )
+      .then(
+        (response) => {
+          console.log("Email sent successfully:", response.status);
+        },
+        (error) => {
+          console.error("Failed to send email:", error);
+        }
+      );
   };
 
   // Function to sort applications by name
@@ -154,9 +208,7 @@ const ApplicationManagement = () => {
                   <TabsTrigger value="all">All</TabsTrigger>
                   <TabsTrigger value="pending">Pending</TabsTrigger>
                   <TabsTrigger value="approved">Approved</TabsTrigger>
-                  <TabsTrigger value="rejected" className="hidden sm:flex">
-                    Rejected
-                  </TabsTrigger>
+                  <TabsTrigger value="rejected">Rejected</TabsTrigger>
                 </TabsList>
                 <div className="ml-auto flex items-center gap-2">
                   <DropdownMenu>

@@ -87,7 +87,6 @@ const Dashboard = () => {
         }
 
         const data = await response.data;
-        console.log(data);
         return data;
       } catch (error) {
         console.error(`Error fetching ${status} count`, error);
@@ -128,7 +127,6 @@ const Dashboard = () => {
             },
           }
         );
-        console.log(response.data);
         setApplications(response.data); // Set the applications data in state
       } catch (error) {
         console.error("Error fetching applications", error);
@@ -222,7 +220,7 @@ const Dashboard = () => {
                       .filter((application) => application.status === "PENDING")
                       .slice(0, 5)
                       .map((application) => (
-                        <TableRow>
+                        <TableRow key={application.applicationId}>
                           <TableCell>
                             <div className="font-medium">
                               {application.name}

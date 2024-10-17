@@ -1,8 +1,7 @@
 // Pannel.jsx
-
 import React, { useState } from "react";
 import { Link, Outlet } from "react-router-dom";
-import { Bell, CircleUser, Home, Menu, Package2, FileUser } from "lucide-react";
+import { CircleUser, Home, Menu, Package2, FileUser } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,7 +11,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTrigger,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
@@ -121,6 +126,8 @@ const Pannel = () => {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="flex flex-col">
+                <SheetTitle className="hidden">Navigation</SheetTitle>
+                <SheetDescription className="hidden">side nav</SheetDescription>
                 <nav className="grid gap-2 text-lg font-medium">
                   <Link
                     to="/pannel/dashboard"

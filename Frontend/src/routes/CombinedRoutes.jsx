@@ -19,13 +19,22 @@ import Application from "@/pages/Application";
 
 // CombinedRoutes.jsx (ProtectedRoute component)
 
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, requiredRoles }) => {
   const jwtToken = localStorage.getItem("jwtToken"); // Make sure the key is correct
-  console.log("ProtectedRoute: jwtToken:", jwtToken); // Debug log
+  const roles = JSON.parse(localStorage.getItem("roles")) || []; // Get roles from local storage
+
+  // Check if user is logged in
   if (!jwtToken) {
     console.log("No JWT token found, redirecting to /login");
     return <Navigate to="/login" replace />;
   }
+
+  // Check if the user has one of the required roles
+  if (requiredRoles && !requiredRoles.some((role) => roles.includes(role))) {
+    console.log("User does not have the required role, redirecting to /");
+    return <Navigate to="/" replace />; // Redirect if unauthorized
+  }
+
   return children;
 };
 
@@ -83,6 +92,32 @@ const CombinedRoutes = () => {
             element={<ApplicationManagement />}
           />
         </Route>
+
+        {/* Protected Routes for Admins */}
+        <Route
+          path="/admin/admission"
+          element={
+            <ProtectedRoute requiredRoles={["ROLE_ADMISSION_ADMIN"]}>
+              <AdmissionAdmin />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/super"
+          element={
+            <ProtectedRoute requiredRoles={["ROLE_SUPER_ADMIN"]}>
+              <SuperAdmin />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/library"
+          element={
+            <ProtectedRoute requiredRoles={["ROLE_LIBRARY_ADMIN"]}>
+              <LibraryAdmin />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
       {!hideComponents && <Footer />}
     </div>
