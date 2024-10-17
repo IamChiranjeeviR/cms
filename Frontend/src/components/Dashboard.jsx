@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Activity,
@@ -7,8 +7,7 @@ import {
   Users,
   FileUser,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -26,8 +25,119 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import axios from "axios";
 
 const Dashboard = () => {
+  const [totalCount, setTotalCount] = useState({});
+  const [pendingCount, setPendingCount] = useState(0);
+  const [acceptedCount, setAcceptedCount] = useState(0);
+  const [rejectedCount, setRejectedCount] = useState(0);
+  const [applications, setApplications] = useState([]);
+
+  useEffect(() => {
+    const fetchTotalCount = async () => {
+      const jwtToken = localStorage.getItem("jwtToken");
+      if (!jwtToken) {
+        console.error("JWT token not found. Cannot fetch applications.");
+        return;
+      }
+
+      try {
+        const response = await axios.get(
+          "http://localhost:8080/api/v1/applications/count",
+          {
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        setTotalCount(response.data);
+      } catch (error) {
+        console.error("Error fetching applications", error);
+      }
+    };
+
+    const fetchStatusCount = async (status) => {
+      console.log(status);
+      const jwtToken = localStorage.getItem("jwtToken");
+      console.log("Retrieved Token");
+
+      if (!jwtToken) {
+        console.error("JWT token not found. Cannot fetch applications.");
+        return;
+      }
+      const CustomConfig = {
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+          "Content-Type": "application/json",
+        },
+      };
+
+      try {
+        const response = await axios.get(
+          `http://localhost:8080/api/v1/applications/count/${status}`,
+          CustomConfig
+        );
+
+        if (!response.status == 200) {
+          throw new Error(
+            `Error fetching ${status} count: ${response.statusText}`
+          );
+        }
+
+        const data = await response.data;
+        console.log(data);
+        return data;
+      } catch (error) {
+        console.error(`Error fetching ${status} count`, error);
+      }
+    };
+
+    const fetchAllStatusCounts = async () => {
+      const pending = await fetchStatusCount("PENDING");
+      const accepted = await fetchStatusCount("APPROVED");
+      const rejected = await fetchStatusCount("REJECTED");
+
+      setPendingCount(pending?.count || 0);
+      setAcceptedCount(accepted?.count || 0);
+      setRejectedCount(rejected?.count || 0);
+    };
+
+    fetchTotalCount();
+    fetchAllStatusCounts();
+  }, []);
+
+  useEffect(() => {
+    const fetchApplications = async () => {
+      const jwtToken = localStorage.getItem("jwtToken"); // Retrieve token from local storage
+      console.log("Retrieved Token"); // Debugging line
+
+      if (!jwtToken) {
+        console.error("JWT token not found. Cannot fetch applications.");
+        return;
+      }
+
+      try {
+        const response = await axios.get(
+          "http://localhost:8080/api/v1/applications/all",
+          {
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        console.log(response.data);
+        setApplications(response.data); // Set the applications data in state
+      } catch (error) {
+        console.error("Error fetching applications", error);
+      }
+    };
+
+    fetchApplications(); // Fetch applications on component mount
+  }, []);
+
   return (
     <>
       <div className="flex min-h-screen w-full flex-col">
@@ -41,7 +151,7 @@ const Dashboard = () => {
                 <FileUser className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">20,000</div>
+                <div className="text-2xl font-bold">{totalCount.count}</div>
                 <p className="text-xs text-muted-foreground">
                   +20.1% from last month
                 </p>
@@ -53,7 +163,7 @@ const Dashboard = () => {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">+2350</div>
+                <div className="text-2xl font-bold">{pendingCount}</div>
                 <p className="text-xs text-muted-foreground">
                   +180.1% from last month
                 </p>
@@ -61,11 +171,11 @@ const Dashboard = () => {
             </Card>
             <Card x-chunk="dashboard-01-chunk-2">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Accepted</CardTitle>
+                <CardTitle className="text-sm font-medium">Approved</CardTitle>
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">+12,234</div>
+                <div className="text-2xl font-bold">{acceptedCount}</div>
                 <p className="text-xs text-muted-foreground">
                   +19% from last month
                 </p>
@@ -77,24 +187,23 @@ const Dashboard = () => {
                 <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">+573</div>
+                <div className="text-2xl font-bold">{rejectedCount}</div>
                 <p className="text-xs text-muted-foreground">
                   +201 since last hour
                 </p>
               </CardContent>
             </Card>
           </div>
+
           <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
             <Card className="xl:col-span-2" x-chunk="dashboard-01-chunk-4">
               <CardHeader className="flex flex-row items-center">
                 <div className="grid gap-2">
-                  <CardTitle>Applications</CardTitle>
-                  <CardDescription>
-                    Recent Applications from CMS.
-                  </CardDescription>
+                  <CardTitle>Pending Applications</CardTitle>
+                  <CardDescription>Applications from CMS.</CardDescription>
                 </div>
                 <Button asChild size="sm" className="ml-auto gap-1">
-                  <Link href="#">
+                  <Link to="/pannel/applicationManagement">
                     View All
                     <ArrowUpRight className="h-4 w-4" />
                   </Link>
@@ -105,203 +214,59 @@ const Dashboard = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
-                      <TableHead className="hidden xl:table-column">
-                        Type
-                      </TableHead>
-                      <TableHead className="hidden xl:table-column">
-                        Status
-                      </TableHead>
-                      <TableHead className="hidden xl:table-column">
-                        Date
-                      </TableHead>
                       <TableHead className="text-right">Group</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    <TableRow>
-                      <TableCell>
-                        <div className="font-medium">Liam Johnson</div>
-                        <div className="hidden text-sm text-muted-foreground md:inline">
-                          liam@example.com
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        Sale
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        <Badge className="text-xs" variant="outline">
-                          Approved
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
-                        2023-06-23
-                      </TableCell>
-                      <TableCell className="text-right">BCA</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>
-                        <div className="font-medium">Olivia Smith</div>
-                        <div className="hidden text-sm text-muted-foreground md:inline">
-                          olivia@example.com
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        Refund
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        <Badge className="text-xs" variant="outline">
-                          Declined
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
-                        2023-06-24
-                      </TableCell>
-                      <TableCell className="text-right">BBA</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>
-                        <div className="font-medium">Noah Williams</div>
-                        <div className="hidden text-sm text-muted-foreground md:inline">
-                          noah@example.com
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        Subscription
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        <Badge className="text-xs" variant="outline">
-                          Approved
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
-                        2023-06-25
-                      </TableCell>
-                      <TableCell className="text-right">BCOM</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>
-                        <div className="font-medium">Emma Brown</div>
-                        <div className="hidden text-sm text-muted-foreground md:inline">
-                          emma@example.com
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        Sale
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        <Badge className="text-xs" variant="outline">
-                          Approved
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
-                        2023-06-26
-                      </TableCell>
-                      <TableCell className="text-right">BSC</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>
-                        <div className="font-medium">Liam Johnson</div>
-                        <div className="hidden text-sm text-muted-foreground md:inline">
-                          liam@example.com
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        Sale
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        <Badge className="text-xs" variant="outline">
-                          Approved
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
-                        2023-06-27
-                      </TableCell>
-                      <TableCell className="text-right">BZC</TableCell>
-                    </TableRow>
+                    {applications
+                      .filter((application) => application.status === "PENDING")
+                      .slice(0, 5)
+                      .map((application) => (
+                        <TableRow>
+                          <TableCell>
+                            <div className="font-medium">
+                              {application.name}
+                            </div>
+                            <div className="hidden text-sm text-muted-foreground md:inline">
+                              {application.email}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {application.degreeCourse}
+                          </TableCell>
+                        </TableRow>
+                      ))}
                   </TableBody>
                 </Table>
               </CardContent>
             </Card>
-            <Card x-chunk="dashboard-01-chunk-5">
+
+            <Card x-chunk="dashboard-01-chunk-4" className="overflow-auto">
               <CardHeader>
                 <CardTitle>Recent Approvals</CardTitle>
               </CardHeader>
               <CardContent className="grid gap-8">
-                <div className="flex items-center gap-4">
-                  <Avatar className="hidden h-9 w-9 sm:flex">
-                    <AvatarImage src="/avatars/01.png" alt="Avatar" />
-                    <AvatarFallback>OM</AvatarFallback>
-                  </Avatar>
-                  <div className="grid gap-1">
-                    <p className="text-sm font-medium leading-none">
-                      Olivia Martin
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      olivia.martin@email.com
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium">BCA</div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Avatar className="hidden h-9 w-9 sm:flex">
-                    <AvatarImage src="/avatars/02.png" alt="Avatar" />
-                    <AvatarFallback>JL</AvatarFallback>
-                  </Avatar>
-                  <div className="grid gap-1">
-                    <p className="text-sm font-medium leading-none">
-                      Jackson Lee
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      jackson.lee@email.com
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium">BBA</div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Avatar className="hidden h-9 w-9 sm:flex">
-                    <AvatarImage src="/avatars/03.png" alt="Avatar" />
-                    <AvatarFallback>IN</AvatarFallback>
-                  </Avatar>
-                  <div className="grid gap-1">
-                    <p className="text-sm font-medium leading-none">
-                      Isabella Nguyen
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      isabella.nguyen@email.com
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium">BCA</div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Avatar className="hidden h-9 w-9 sm:flex">
-                    <AvatarImage src="/avatars/04.png" alt="Avatar" />
-                    <AvatarFallback>WK</AvatarFallback>
-                  </Avatar>
-                  <div className="grid gap-1">
-                    <p className="text-sm font-medium leading-none">
-                      William Kim
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      will@email.com
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium">BCOM</div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Avatar className="hidden h-9 w-9 sm:flex">
-                    <AvatarImage src="/avatars/05.png" alt="Avatar" />
-                    <AvatarFallback>SD</AvatarFallback>
-                  </Avatar>
-                  <div className="grid gap-1">
-                    <p className="text-sm font-medium leading-none">
-                      Sofia Davis
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      sofia.davis@email.com
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium">BSC</div>
-                </div>
+                {applications
+                  .filter((application) => application.status === "APPROVED")
+                  .slice(0, 5)
+                  .map((application) => (
+                    <div
+                      className="flex items-center gap-4"
+                      key={application.id}
+                    >
+                      <div className="grid gap-1">
+                        <p className="text-sm font-medium leading-none">
+                          {application.name}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {application.email}
+                        </p>
+                      </div>
+                      <div className="ml-auto font-medium">
+                        {application.degreeCourse}
+                      </div>
+                    </div>
+                  ))}
               </CardContent>
             </Card>
           </div>

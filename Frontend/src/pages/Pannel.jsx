@@ -1,3 +1,5 @@
+// Pannel.jsx
+
 import React, { useState } from "react";
 import { Link, Outlet } from "react-router-dom";
 import { Bell, CircleUser, Home, Menu, Package2, FileUser } from "lucide-react";
@@ -13,22 +15,43 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import axios from "axios";
+
 const Pannel = () => {
-  const [isCollapsed, setIsCollapsed] = useState(false); // State to manage sidenav collapse
-  const [searchTerm, setSearchTerm] = useState(""); // Add searchTerm state
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value); // Update search term on input change
+    setSearchTerm(e.target.value);
   };
 
-  const jwtToken = localStorage.getItem("jwtToken");
+  const handleLogout = async () => {
+    const jwtToken = localStorage.getItem("jwtToken");
 
-  const handleLogout = () => {
-    localStorage.removeItem("jwtToken");
-    localStorage.removeItem("roles");
+    if (jwtToken) {
+      try {
+        await axios.post(
+          "http://localhost:8080/auth/logout",
+          {},
+          {
+            headers: { Authorization: `Bearer ${jwtToken}` },
+          }
+        );
+        console.log("Logout successful");
 
-    // Navigate back to the login page
-    window.location.href = "/login";
+        // Clear local storage and redirect to login only after a successful logout
+        localStorage.removeItem("jwtToken");
+        localStorage.removeItem("roles");
+        window.location.href = "/login";
+      } catch (error) {
+        console.error("Logout failed:", error);
+        // Optionally, notify the user
+        alert("Logout failed, please try again.");
+      }
+    } else {
+      // If no token is found, redirect immediately
+      window.location.href = "/login";
+    }
   };
 
   const toggleCollapse = () => {
@@ -49,7 +72,7 @@ const Pannel = () => {
           className={`${
             isCollapsed ? "w-[80px]" : "w-[220px] lg:w-[280px]"
           } hidden border-r bg-muted/40 md:block transition-all duration-300`}
-          style={{ position: "sticky", top: 0, height: "100vh" }} // Make sidebar sticky
+          style={{ position: "sticky", top: 0, height: "100vh" }}
         >
           <div className="flex h-full max-h-screen flex-col gap-2">
             <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
@@ -85,10 +108,7 @@ const Pannel = () => {
         {/* Main content */}
         <div className="flex flex-col">
           {/* Header (Sticky) */}
-          <header
-            className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6"
-            style={{ position: "sticky", top: 0 }}
-          >
+          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
             <Sheet>
               <SheetTrigger asChild>
                 <Button
@@ -128,15 +148,14 @@ const Pannel = () => {
             </Sheet>
             <div className="w-full flex-1">
               <form onSubmit={(e) => e.preventDefault()}>
-                {/* Prevent form submission */}
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="search"
                     placeholder="Search Applications..."
                     className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
-                    value={searchTerm} // Controlled input
-                    onChange={handleSearchChange} // Handle input change
+                    value={searchTerm}
+                    onChange={handleSearchChange}
                   />
                 </div>
               </form>
@@ -175,7 +194,6 @@ const Pannel = () => {
           {/* Scrollable content */}
           <div className="overflow-y-auto h-full p-4">
             <Outlet context={{ searchTerm }} />
-            {/* Pass searchTerm as context */}
           </div>
         </div>
       </div>

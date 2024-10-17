@@ -824,7 +824,7 @@ const RegistrationForm = ({ onSubmit }) => {
                                   <SelectItem value="BZC">
                                     BZC [Bachelors in Zoology and Chemistry]
                                   </SelectItem>
-                                  <SelectItem value="Bio-Tech">
+                                  <SelectItem value="BIOTECH">
                                     Bio-Tech [Bachelors in Biotechnology]
                                   </SelectItem>
                                 </SelectGroup>

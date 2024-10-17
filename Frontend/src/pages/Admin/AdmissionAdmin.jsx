@@ -1,6 +1,6 @@
 // AdmissionAdmin.jsx
 
-import React from "react";
+import React, { useEffect } from "react";
 import LoginForm from "@/components/LoginForm";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -16,23 +16,29 @@ const AdmissionAdmin = () => {
       });
 
       if (response.status === 200) {
-        const { token, roles } = response.data; // Adjust based on your response structure
-        const role = roles[0].authority; // Assuming the first role is the primary one
+        const { token, roles } = response.data; // Assuming your API returns this structure
 
-        const existingTokens =
-          JSON.parse(localStorage.getItem("jwtTokens")) || {};
-        existingTokens[role] = token; // Store token by role
+        // Store token and roles in local storage
+        localStorage.setItem("jwtToken", token); // Use the correct key
+        localStorage.setItem("roles", JSON.stringify(roles));
 
-        localStorage.setItem("jwtToken", token); // Add this line
-
-        console.log("Login successful");
-        navigate("/pannel");
+        console.log("Login successful, token stored:", token);
+        navigate("/pannel"); // Navigate to Pannel after successful login
       }
     } catch (error) {
       console.error("Login failed:", error);
-      // Handle error (show notification, etc.)
+      // Optionally show a notification or alert here
     }
   };
+
+  // Check if token exists to navigate to Pannel
+  useEffect(() => {
+    const jwtToken = localStorage.getItem("jwtToken");
+    if (jwtToken) {
+      console.log("Token exists, navigating to /pannel");
+      navigate("/pannel"); // Navigate if token exists
+    }
+  }, [navigate]); // Include navigate in the dependency array to avoid linting warnings
 
   return <LoginForm onSubmit={handleLogin} />;
 };

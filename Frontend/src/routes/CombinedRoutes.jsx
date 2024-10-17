@@ -17,10 +17,13 @@ import Dashboard from "@/components/Dashboard";
 import ApplicationManagement from "@/components/ApplicationManagement";
 import Application from "@/pages/Application";
 
-// ProtectedRoute component
+// CombinedRoutes.jsx (ProtectedRoute component)
+
 const ProtectedRoute = ({ children }) => {
-  const jwtToken = localStorage.getItem("jwtTokens"); // Use "jwtTokens" as per your implementation
+  const jwtToken = localStorage.getItem("jwtToken"); // Make sure the key is correct
+  console.log("ProtectedRoute: jwtToken:", jwtToken); // Debug log
   if (!jwtToken) {
+    console.log("No JWT token found, redirecting to /login");
     return <Navigate to="/login" replace />;
   }
   return children;
